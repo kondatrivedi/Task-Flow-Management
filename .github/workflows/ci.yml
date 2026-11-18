@@ -1,0 +1,64 @@
+
+name: TaskFlow CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-validate:
+    name: Validate TaskFlow
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Configure Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Step 3: Install frontend dependencies
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # Step 4: Check frontend code
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      # Step 5: Build frontend
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      # Step 6: Install backend dependencies
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      # Step 7: Validate backend JavaScript syntax
+      - name: Validate backend syntax
+        working-directory: backend
+        run: |
+          node --check server.js
+          node --check config/db.js
+          node --check controllers/taskController.js
+          node --check models/Task.js
+          node --check routes/taskRoutes.js
+
+      # Step 8: Build backend Docker image
+      - name: Build backend Docker image
+        run: docker build -t taskflow-backend:ci ./backend
+
+      # Step 9: Build frontend Docker image
+      - name: Build frontend Docker image
+        run: docker build -t taskflow-frontend:ci ./frontend
